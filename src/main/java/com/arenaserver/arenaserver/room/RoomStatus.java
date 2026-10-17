@@ -1,4 +1,4 @@
-package com.arenaserver.arenaserver.domain;
+package com.arenaserver.arenaserver.room;
 
 public enum RoomStatus {
     WAITING,

@@ -1,5 +1,8 @@
-package com.arenaserver.arenaserver.domain;
+package com.arenaserver.arenaserver.room;
 
+import com.arenaserver.arenaserver.domain.Game;
+import com.arenaserver.arenaserver.domain.GameStatus;
+import com.arenaserver.arenaserver.domain.MoveResult;
 import lombok.Getter;
 
 public class GameRoom {
