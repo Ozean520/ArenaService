@@ -1,5 +1,9 @@
 package com.arenaserver.arenaserver.websocket;
 
+import com.arenaserver.arenaserver.domain.Disc;
+import com.arenaserver.arenaserver.domain.Game;
+import com.arenaserver.arenaserver.domain.GameStatus;
+import com.arenaserver.arenaserver.domain.MoveResult;
 import com.arenaserver.arenaserver.room.RoomManager;
 import jakarta.annotation.Nonnull;
 import org.springframework.stereotype.Component;
@@ -160,7 +164,8 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
 
                 try {
                     joined = roomManager.joinRoom(roomId, playerId);
-                } catch (Exception e) {
+                } catch (IllegalArgumentException |
+                        IllegalStateException e) {
                     sendError(session, "INVALID_REQUEST", "Room join failed");
                     return;
                 }
@@ -173,10 +178,7 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
                 List<String> playerIds = roomManager.getRoom(roomId).getPlayerIds();
 
                 for (int i = 0; i < playerIds.size(); i++) {
-                    String color;
-
-                    if (i == 0) color = "RED";
-                    else color = "YELLOW";
+                    String color = i == 0 ? "RED" : "YELLOW";
 
                     sessionManager.sendTo(playerIds.get(i), Map.of("type", "GAME_STARTED",
                             "roomId", roomId,
@@ -186,6 +188,60 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
 
             }
             case "MOVE" -> {
+                /* 实现落子部分 */
+                JsonNode roomNode = root.get("roomId");
+
+                if (roomNode == null ||
+                    !roomNode.isString() ||
+                    roomNode.asString().isBlank()) {
+
+                    sendError(session, "INVALID_REQUEST", "Invalid room id");
+                    return;
+                }
+
+                String roomId = roomNode.asString();
+
+                JsonNode colNode = root.get("column");
+
+                if  (colNode == null || !colNode.isInt()) {
+                    sendError(session, "INVALID_REQUEST", "Invalid column");
+                    return;
+                }
+
+                int col = colNode.asInt();
+
+                String playerId = session.getId();
+
+                MoveResult result;
+
+                try {
+                    result = roomManager.play(roomId, playerId, col);
+                } catch (IllegalArgumentException |
+                        IllegalStateException e) {
+                    sendError(session, "INVALID_REQUEST", "Move not allowed");
+                    return;
+                }
+
+                List<String> playerIds = roomManager.getRoom(roomId).getPlayerIds();
+
+                String nextTurn;
+                String nowTurn = result.disc().name();
+
+                if (result.status() == GameStatus.FINISHED) nextTurn = Disc.EMPTY.name();
+                else if (nowTurn.equals("RED")) nextTurn = "YELLOW";
+                else nextTurn = "RED";
+
+
+                for (String id : playerIds) {
+                    sessionManager.sendTo(id, Map.of("type", "GAME_UPDATE",
+                            "roomId", roomId,
+                            "row", result.row(),
+                            "column", result.col(),
+                            "disc", nowTurn,
+                            "status", result.status().name(),
+                            "winner", result.winner().name(),
+                            "nextTurn", nextTurn));
+                }
 
             }
             default -> sendError(session, "UNKNOWN_TYPE", "Invalid message type");
