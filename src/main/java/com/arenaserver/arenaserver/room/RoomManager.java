@@ -1,9 +1,11 @@
 package com.arenaserver.arenaserver.room;
 
 import com.arenaserver.arenaserver.domain.MoveResult;
+import org.springframework.stereotype.Component;
 
 import java.util.concurrent.ConcurrentHashMap;
 
+@Component
 public class RoomManager {
     private final ConcurrentHashMap<String, GameRoom> rooms = new ConcurrentHashMap<>();
 
