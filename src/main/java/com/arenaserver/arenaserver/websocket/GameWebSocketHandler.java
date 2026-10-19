@@ -3,6 +3,7 @@ package com.arenaserver.arenaserver.websocket;
 import com.arenaserver.arenaserver.room.RoomManager;
 import jakarta.annotation.Nonnull;
 import org.springframework.stereotype.Component;
+import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
@@ -11,6 +12,7 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -18,11 +20,14 @@ import java.util.UUID;
 public class GameWebSocketHandler extends TextWebSocketHandler {
     private final ObjectMapper objectMapper;
     private final RoomManager roomManager;
+    private final SessionManager sessionManager;
 
     public GameWebSocketHandler(ObjectMapper objectMapper,
-                                RoomManager roomManager) {
+                                RoomManager roomManager,
+                                SessionManager sessionManager) {
         this.objectMapper = objectMapper;
         this.roomManager = roomManager;
+        this.sessionManager = sessionManager;
     }
 
     private void sendError(
@@ -40,18 +45,38 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
 
     private void sendJson(WebSocketSession session,
                           Map<String, ?> data) throws IOException {
-        String json = objectMapper.writeValueAsString(data);
 
-        session.sendMessage(new TextMessage(json));
+        sessionManager.sendTo(session.getId(), data);
     }
 
+    /**
+     * 建立连接
+     * @param session 玩家 session
+     * @throws Exception 异常
+     */
     @Override
     public void afterConnectionEstablished (@Nonnull WebSocketSession session) throws Exception {
+
+        /* 建立连接前先注册 */
+        sessionManager.register(session);
 
         sendJson(session, Map.of(
                 "type", "WELCOME",
                 "playerId", session.getId()
         ));
+    }
+
+    /**
+     * 连接关闭
+     * @param session 断开的 session
+     * @param status
+     */
+    @Override
+    public void afterConnectionClosed(
+            WebSocketSession session,
+            CloseStatus status) {
+
+        sessionManager.unregister(session.getId());
     }
 
     /**
@@ -118,6 +143,47 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
                                         "roomId", roomId));
             }
             case "JOIN_ROOM" -> {
+                /* 加入房间分支*/
+                JsonNode roomNode = root.get("roomId");
+
+                if (roomNode == null || !roomNode.isString() ||
+                        roomNode.asString().isBlank()) {
+
+                    sendError(session, "INVALID_REQUEST", "Invalid room id");
+                    return;
+                }
+
+                String roomId = roomNode.asString();
+                String playerId = session.getId();
+
+                boolean joined = false;
+
+                try {
+                    joined = roomManager.joinRoom(roomId, playerId);
+                } catch (Exception e) {
+                    sendError(session, "INVALID_REQUEST", "Room join failed");
+                    return;
+                }
+
+                if (!joined) {
+                    sendError(session, "INVALID_REQUEST", "Room join failed");
+                    return;
+                }
+
+                List<String> playerIds = roomManager.getRoom(roomId).getPlayerIds();
+
+                for (int i = 0; i < playerIds.size(); i++) {
+                    String color;
+
+                    if (i == 0) color = "RED";
+                    else color = "YELLOW";
+
+                    sessionManager.sendTo(playerIds.get(i), Map.of("type", "GAME_STARTED",
+                            "roomId", roomId,
+                            "yourDisc", color,
+                            "currentTurn", "RED"));
+                }
+
             }
             case "MOVE" -> {
 

@@ -5,6 +5,8 @@ import com.arenaserver.arenaserver.domain.GameStatus;
 import com.arenaserver.arenaserver.domain.MoveResult;
 import lombok.Getter;
 
+import java.util.List;
+
 public class GameRoom {
 
     @Getter
@@ -54,7 +56,7 @@ public class GameRoom {
     public synchronized boolean join(String playerId) {
         // 1
         if (playerId == null || playerId.isBlank())
-            throw new IllegalArgumentException("Invalid playerId");
+            return false;
 
         // 2
         if (playerId.equals(hostPlayerId) ||
@@ -63,7 +65,7 @@ public class GameRoom {
 
         // 3
         if (guestPlayerId != null)
-            throw new IllegalStateException("Room full");
+            return false;
 
         /* 假设 game 未能成功创建，中途抛出异常，会导致房间有玩家但启动失败 */
         Game newGame = new Game(hostPlayerId, playerId);
@@ -97,5 +99,16 @@ public class GameRoom {
 
     public synchronized int getMoveCount() {
         return game == null ? 0 : game.getMoveCount();
+    }
+
+    /**
+     * 获取房间玩家列表
+     * @return 玩家列表
+     */
+    public synchronized List<String> getPlayerIds() {
+        if (guestPlayerId == null)
+            return List.of(hostPlayerId);
+
+        return  List.of(hostPlayerId ,guestPlayerId);
     }
 }
