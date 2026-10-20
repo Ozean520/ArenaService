@@ -1,0 +1,30 @@
+#board {
+    display: grid;
+    grid-template-columns: repeat(7, 48px);
+    gap: 5px;
+    padding: 10px;
+    background: #225caa;
+    width: max-content;
+    border-radius: 10px;
+}
+
+.cell {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: none;
+    background: #e2e8f0;
+    cursor: pointer;
+}
+
+.cell.red {
+    background: #dc5752;
+}
+
+.cell.yellow {
+    background: #eac64c;
+}
+
+.cell:disabled {
+    cursor: default;
+}

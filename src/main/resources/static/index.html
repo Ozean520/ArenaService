@@ -2,50 +2,27 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>ArenaServer Test</title>
+    <title>ArenaServer</title>
+    <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-<h2>ArenaServer - WebSocket Test</h2>
+<h1>ArenaServer</h1>
 
-<p id="status">尚未连接</p>
+<p id="connectionStatus">正在连接...</p>
 
-<button id="createRoom" disabled>
-    创建房间
-</button>
+<button id="createButton">创建房间</button>
+
+<input id="roomInput"
+       placeholder="输入房间 ID">
+
+<button id="joinButton">加入房间</button>
+
+<p id="gameInfo">等待游戏开始</p>
+
+<div id="board"></div>
 
 <pre id="log"></pre>
 
-<script>
-    const status = document.getElementById("status");
-    const log = document.getElementById("log");
-    const button = document.getElementById("createRoom");
-
-    const protocol = location.protocol === "https:"
-        ? "wss:" : "ws:";
-
-    const ws = new WebSocket(
-        `${protocol}//${location.host}/ws`
-    );
-
-    ws.onopen = () => {
-        status.textContent = "WebSocket 已连接";
-        button.disabled = false;
-    };
-
-    ws.onmessage = (event) => {
-        log.textContent += event.data + "\n";
-    };
-
-    ws.onclose = () => {
-        status.textContent = "WebSocket 已断开";
-        button.disabled = true;
-    };
-
-    button.onclick = () => {
-        ws.send(JSON.stringify({
-            type: "CREATE_ROOM"
-        }));
-    };
-</script>
+<script src="/game.js"></script>
 </body>
 </html>
