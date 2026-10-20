@@ -1,6 +1,7 @@
 package com.arenaserver.arenaserver.room;
 
 import com.arenaserver.arenaserver.domain.Game;
+import com.arenaserver.arenaserver.domain.GameSnapshot;
 import com.arenaserver.arenaserver.domain.GameStatus;
 import com.arenaserver.arenaserver.domain.MoveResult;
 import lombok.Getter;
@@ -110,5 +111,24 @@ public class GameRoom {
             return List.of(hostPlayerId);
 
         return  List.of(hostPlayerId ,guestPlayerId);
+    }
+
+    /**
+     * 游戏房间提供游戏快照
+     * @param playerId 请求快照的玩家 ID
+     * @return  游戏快照
+     */
+    public synchronized GameSnapshot snapshotFor(String playerId) {
+        if (playerId == null || playerId.isBlank())
+            throw new IllegalArgumentException("Invalid playerId");
+
+        /* 暂时不考虑添加参观模式，因此只有游戏内玩家有权请求快照 */
+        if (!playerId.equals(hostPlayerId) && !playerId.equals(guestPlayerId))
+            throw new IllegalArgumentException("Invalid playerId");
+
+        if (game.getStatus() != GameStatus.PLAYING)
+            throw new IllegalStateException("Game is not playing");
+
+        return game.snapshot();
     }
 }

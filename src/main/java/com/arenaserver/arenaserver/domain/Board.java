@@ -1,6 +1,8 @@
 package com.arenaserver.arenaserver.domain;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * 棋盘类
@@ -156,5 +158,24 @@ public class Board {
         }
 
         return false;
+    }
+
+    /**
+     * 生成棋盘快照方法
+     * 通过遍历棋盘每一行并复制实现快照生成
+     * 但快照不应该是可变的，所以需考虑得到不可修改列表
+     * @return 棋盘快照
+     */
+    public List<List<Disc>> snapshotCells() {
+
+        /* 结果列表 */
+        List<List<Disc>> board = new ArrayList<>();
+
+        for (Disc[] row : cells) board.add(
+                /* List.copyOf 得到不可修改列表 */
+                List.copyOf(Arrays.asList(row))
+        );
+
+        return board;
     }
 }

@@ -98,4 +98,18 @@ public class Game {
     public Disc getCell(int row, int col) {
         return board.getCell(row, col);
     }
+
+    /**
+     * 生成游戏快照方法
+     * @return 游戏快照
+     */
+    public GameSnapshot snapshot() {
+        return new GameSnapshot(
+                board.snapshotCells(),
+                status,
+                currentTurn,
+                winner,
+                moveCount
+        );
+    }
 }

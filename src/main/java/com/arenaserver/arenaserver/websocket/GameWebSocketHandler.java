@@ -160,7 +160,7 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
                 String roomId = roomNode.asString();
                 String playerId = session.getId();
 
-                boolean joined = false;
+                boolean joined;
 
                 try {
                     joined = roomManager.joinRoom(roomId, playerId);
