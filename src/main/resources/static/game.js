@@ -94,8 +94,8 @@ ws.onmessage = (event) => {
 
         case "GAME_STARTED": {
             roomId = message.roomId;
-            const myDisc = message.yourDisc;
-            const currentTurn = message.currentTurn;
+            myDisc = message.yourDisc;
+            currentTurn = message.currentTurn;
 
             gameStatus = "PLAYING";
 
