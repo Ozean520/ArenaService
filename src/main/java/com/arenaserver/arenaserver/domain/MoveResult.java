@@ -7,11 +7,13 @@ package com.arenaserver.arenaserver.domain;
  * @param disc  哪个玩家（红色或黄色）
  * @param status    游戏状态
  * @param winner    谁赢了
+ * @param version   版本号
  */
 public record MoveResult(
         int row,
         int col,
         Disc disc,
         GameStatus status,
-        Disc winner /* 约定 empty 时表示游戏进行中或平局 */
+        Disc winner, /* 约定 empty 时表示游戏进行中或平局 */
+        int version
 ) {}

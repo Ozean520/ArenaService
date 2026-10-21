@@ -238,7 +238,8 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
                             "disc", nowTurn,
                             "status", result.status().name(),
                             "winner", result.winner().name(),
-                            "nextTurn", nextTurn));
+                            "nextTurn", nextTurn,
+                            "version", result.version()));
                 }
 
             }

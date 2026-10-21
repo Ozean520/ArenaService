@@ -91,7 +91,8 @@ public class Game {
                 row, col,
                 player,
                 status,
-                winner
+                winner,
+                moveCount
         );
     }
 

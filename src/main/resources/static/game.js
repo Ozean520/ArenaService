@@ -12,11 +12,19 @@ let roomId = null;
 let myDisc = null;
 let currentTurn = null;
 let gameStatus = "WAITING";
+let lastVersion = 0;
+let syncPending = false;
 
 const board = Array.from(
     { length: 6 },
     () => Array(7).fill("EMPTY")
 );
+
+function checkVersion(version) {
+    if (version <= lastVersion) return "OLD";
+    if (version > lastVersion + 1) return "GAP";
+    return "NEXT";
+}
 
 /* 绘制棋盘 */
 function renderBoard() {
@@ -103,6 +111,12 @@ ws.onmessage = (event) => {
             const row = message.row;
             const col = message.column;
             const disc = message.disc;
+            const verdict = checkVersion(message.version);
+
+            if (verdict === "OLD") break;
+            if (verdict === "GAP") break;
+
+            lastVersion = message.version;
 
             board[row][col] = disc;
 
