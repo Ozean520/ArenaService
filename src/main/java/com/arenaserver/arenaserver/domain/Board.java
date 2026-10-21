@@ -169,13 +169,13 @@ public class Board {
     public List<List<Disc>> snapshotCells() {
 
         /* 结果列表 */
-        List<List<Disc>> board = new ArrayList<>();
+        List<List<Disc>> snapshot = new ArrayList<>();
 
-        for (Disc[] row : cells) board.add(
+        for (Disc[] row : cells) snapshot.add(
                 /* List.copyOf 得到不可修改列表 */
                 List.copyOf(Arrays.asList(row))
         );
 
-        return board;
+        return List.copyOf(snapshot);
     }
 }

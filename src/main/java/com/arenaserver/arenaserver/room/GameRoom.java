@@ -122,12 +122,12 @@ public class GameRoom {
         if (playerId == null || playerId.isBlank())
             throw new IllegalArgumentException("Invalid playerId");
 
-        /* 暂时不考虑添加参观模式，因此只有游戏内玩家有权请求快照 */
+        /* 只有游戏内玩家有权请求快照 */
         if (!playerId.equals(hostPlayerId) && !playerId.equals(guestPlayerId))
-            throw new IllegalArgumentException("Invalid playerId");
+            throw new IllegalArgumentException("Player not in the room");
 
-        if (game.getStatus() != GameStatus.PLAYING)
-            throw new IllegalStateException("Game is not playing");
+        if (game == null)
+            throw new IllegalStateException("Game has not started");
 
         return game.snapshot();
     }
