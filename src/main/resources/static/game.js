@@ -22,7 +22,7 @@ const board = Array.from(
 function renderBoard() {
     boardElement.replaceChildren();
 
-    for (let row = 5; row >= 0; row--) {
+    for (let row = 5; row >= 0; row--)
         for (let col = 0; col < 7; col++) {
             const cell = document.createElement("button");
 
@@ -44,7 +44,6 @@ function renderBoard() {
 
             boardElement.appendChild(cell);
         }
-    }
 }
 
 /* 发送创建房间请求 */
@@ -112,14 +111,29 @@ ws.onmessage = (event) => {
             gameStatus = message.status;
 
             if (gameStatus === "FINISHED") {
-                if (message.winner === "EMPTY") {
+                if (message.winner === "EMPTY")
                     gameInfo.textContent = '游戏结束，平局！';
-                } else {
+                 else
                     gameInfo.textContent = '游戏结束，赢家是：' + message.winner;
-                }
-            } else {
+            } else
                 gameInfo.textContent = `现在是 ${currentTurn} 的回合！`;
-            }
+
+            renderBoard();
+            break;
+        }
+
+        case "GAME_SNAPSHOT": {
+            for (let row = 0; row < 6; row++)
+                for (let col = 0; col < 7; col++)
+                    board[row][col] = message.cells[row][col];
+
+            currentTurn = message.currentTurn;
+            gameStatus = message.status;
+
+            if (gameStatus === "FINISHED")
+                gameInfo.textContent = message.winner === "EMPTY" ?
+                    "游戏已结束，平局！" : `游戏已结束，赢家为 ${message.winner}`;
+            else gameInfo.textContent = `当前轮到 ${message.currentTurn}！`;
 
             renderBoard();
             break;

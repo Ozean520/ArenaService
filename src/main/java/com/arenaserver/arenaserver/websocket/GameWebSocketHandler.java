@@ -1,9 +1,7 @@
 package com.arenaserver.arenaserver.websocket;
 
-import com.arenaserver.arenaserver.domain.Disc;
-import com.arenaserver.arenaserver.domain.Game;
-import com.arenaserver.arenaserver.domain.GameStatus;
-import com.arenaserver.arenaserver.domain.MoveResult;
+import com.arenaserver.arenaserver.domain.*;
+import com.arenaserver.arenaserver.room.GameRoom;
 import com.arenaserver.arenaserver.room.RoomManager;
 import jakarta.annotation.Nonnull;
 import org.springframework.stereotype.Component;
@@ -243,6 +241,42 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
                             "nextTurn", nextTurn));
                 }
 
+            }
+            case "SYNC_GAME" -> {
+                /* 客户端请求快照 */
+                JsonNode roomNode = root.get("roomId");
+
+                if (roomNode == null ||
+                    !roomNode.isString() ||
+                    roomNode.asString().isBlank()) {
+                    sendError(session, "INVALID_REQUEST", "Invalid room id");
+                    return;
+                }
+
+                String roomId = roomNode.asString();
+
+                String playerId = session.getId();
+
+                GameRoom room;
+                GameSnapshot snapshot;
+
+                try {
+                    room = roomManager.getRoom(roomId);
+                    snapshot = room.snapshotFor(playerId);
+                } catch (IllegalArgumentException |
+                        IllegalStateException e) {
+                    sendError(session, "INVALID_REQUEST", "Invalid room id");
+                    return;
+                }
+
+                sessionManager.sendTo(playerId, Map.of("type", "GAME_SNAPSHOT",
+                        "roomId", roomId,
+                        "cells", snapshot.cells(),
+                        "status", snapshot.status().name(),
+                        "currentTurn", snapshot.currentTurn(),
+                        "winner", snapshot.winner(),
+                        "version", snapshot.version()
+                ));
             }
             default -> sendError(session, "UNKNOWN_TYPE", "Invalid message type");
         }
