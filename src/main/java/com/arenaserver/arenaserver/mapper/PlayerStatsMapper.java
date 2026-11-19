@@ -10,7 +10,7 @@ public interface PlayerStatsMapper {
     @Update("""
     UPDATE player_stats
     SET wins = wins + 1
-    WHERE player_id = #{player_id}
+    WHERE player_id = #{playerId}
     """)
     int incrementWins(@Param("playerId") String playerId);
 }
