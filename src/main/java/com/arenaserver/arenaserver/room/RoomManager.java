@@ -72,5 +72,16 @@ public class RoomManager {
     public MoveResult play(String roomId, String playerId, int col) {
         return getRoom(roomId).play(playerId, col);
     }
+
+    /**
+     * 返回最终游戏结果
+     * @param roomId 房间 id
+     * @param playerId  玩家 id
+     * @param col 落子的列
+     * @return 最终游戏结果
+     */
+    public RoomPlayOutcome playAndCapture(String roomId, String playerId, int col) {
+        return getRoom(roomId).playAndCapture(playerId, col);
+    }
 }
 

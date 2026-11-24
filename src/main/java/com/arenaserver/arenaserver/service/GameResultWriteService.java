@@ -37,7 +37,7 @@ public class GameResultWriteService {
 
         int affected = statsMapper.incrementWins(winnerId);
 
-        if (affected != 1)
+        if (affected <= 0)
             throw new IllegalStateException("failed to update wins : " + winnerId);
     }
 }

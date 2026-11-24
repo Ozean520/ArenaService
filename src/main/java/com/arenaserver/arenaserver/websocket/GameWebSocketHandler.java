@@ -3,7 +3,11 @@ package com.arenaserver.arenaserver.websocket;
 import com.arenaserver.arenaserver.domain.*;
 import com.arenaserver.arenaserver.room.GameRoom;
 import com.arenaserver.arenaserver.room.RoomManager;
+import com.arenaserver.arenaserver.room.RoomPlayOutcome;
+import com.arenaserver.arenaserver.service.GameResultService;
 import jakarta.annotation.Nonnull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
@@ -20,16 +24,21 @@ import java.util.UUID;
 
 @Component
 public class GameWebSocketHandler extends TextWebSocketHandler {
+    private final Logger logger = LoggerFactory.getLogger(GameWebSocketHandler.class);
+
     private final ObjectMapper objectMapper;
     private final RoomManager roomManager;
     private final SessionManager sessionManager;
+    private final GameResultService gameResultService;
 
     public GameWebSocketHandler(ObjectMapper objectMapper,
                                 RoomManager roomManager,
-                                SessionManager sessionManager) {
+                                SessionManager sessionManager,
+                                GameResultService gameResultService) {
         this.objectMapper = objectMapper;
         this.roomManager = roomManager;
         this.sessionManager = sessionManager;
+        this.gameResultService = gameResultService;
     }
 
     private void sendError(
@@ -210,14 +219,33 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
 
                 String playerId = session.getId();
 
-                MoveResult result;
+                RoomPlayOutcome outcome;
 
                 try {
-                    result = roomManager.play(roomId, playerId, col);
+                    outcome = roomManager.playAndCapture(roomId, playerId, col);
                 } catch (IllegalArgumentException |
                         IllegalStateException e) {
                     sendError(session, "INVALID_REQUEST", "Move not allowed");
                     return;
+                }
+
+                MoveResult result = outcome.moveResult();
+
+                boolean persistenceSucceeded = true;
+
+                if (outcome.newlyFinishedGame() != null) {
+                    try {
+                        GameResultService.SaveOutcome saveOutcome =
+                                gameResultService.saveFinishedGame(outcome.newlyFinishedGame());
+
+                        logger.info("Game result saved: roomId={}, outcome={}",
+                                roomId, saveOutcome);
+
+                    } catch (RuntimeException e) {
+                        persistenceSucceeded = false;
+                        logger.error("Failed to persist game result: roomId={}",
+                                roomId, e);
+                    }
                 }
 
                 List<String> playerIds = roomManager.getRoom(roomId).getPlayerIds();
@@ -229,8 +257,7 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
                 else if (nowTurn.equals("RED")) nextTurn = "YELLOW";
                 else nextTurn = "RED";
 
-
-                for (String id : playerIds) {
+                for (String id : playerIds)
                     sessionManager.sendTo(id, Map.of("type", "GAME_UPDATE",
                             "roomId", roomId,
                             "row", result.row(),
@@ -240,6 +267,15 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
                             "winner", result.winner().name(),
                             "nextTurn", nextTurn,
                             "version", result.version()));
+
+                if (outcome.newlyFinishedGame() != null) {
+                    String savedType = persistenceSucceeded ?
+                            "GAME_RESULT_SAVED" : "GAME_RESULT_SAVE_FAILED";
+
+                    for (String id : playerIds)
+                        sessionManager.sendTo(id, Map.of("type", savedType,
+                                    "roomId", roomId));
+
                 }
 
             }

@@ -1,11 +1,10 @@
 package com.arenaserver.arenaserver.room;
 
-import com.arenaserver.arenaserver.domain.Game;
-import com.arenaserver.arenaserver.domain.GameSnapshot;
-import com.arenaserver.arenaserver.domain.GameStatus;
-import com.arenaserver.arenaserver.domain.MoveResult;
+import com.arenaserver.arenaserver.domain.*;
 import lombok.Getter;
 
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 public class GameRoom {
@@ -17,6 +16,7 @@ public class GameRoom {
     private String guestPlayerId;
 
     private Game game;
+    private FinishedGameResult finishedGameResult;
 
     public GameRoom(
             String roomId,
@@ -95,7 +95,7 @@ public class GameRoom {
             throw new IllegalStateException("Game is not playing");
 
         // 2
-        return game.play(playerId, col);
+        return playAndCapture(playerId, col).moveResult();
     }
 
     public synchronized int getMoveCount() {
@@ -130,5 +130,37 @@ public class GameRoom {
             throw new IllegalStateException("Game has not started");
 
         return game.snapshot();
+    }
+
+    /**
+     * 当游戏结束时返回最终游戏结果的方法
+     * @param playerId 玩家 ID
+     * @param col 列
+     * @return 最终游戏结果
+     */
+    public synchronized RoomPlayOutcome playAndCapture(String playerId, int col) {
+        if (getStatus() != RoomStatus.PLAYING)
+            throw new IllegalStateException("Game is not playing");
+
+        MoveResult move = game.play(playerId, col);
+
+        FinishedGameResult newlyFinished = null;
+
+        if (move.status() == GameStatus.FINISHED &&
+            finishedGameResult == null) {
+
+            newlyFinished = new FinishedGameResult(
+                    roomId,
+                    hostPlayerId,
+                    guestPlayerId,
+                    move.winner(),
+                    move.version(),
+                    LocalDateTime.now().truncatedTo(ChronoUnit.MILLIS)
+            );
+
+            finishedGameResult = newlyFinished;
+        }
+
+        return new RoomPlayOutcome(move, newlyFinished);
     }
 }
